@@ -25,17 +25,12 @@ class Downblock(nn.Module):
     def forward(self, x):
         return self.dwconv(x)
 
-class GEBlock(nn.Module):
+class ACMBlock(nn.Module):
+        #aggregation-calibration mechanism
     def __init__(self, in_planes, out_planes, spatial=7, extent=0, extra_params=True, mlp=True, dropRate=0.3):
-        super(GEBlock, self).__init__()
-
+        super(ACMBlock, self).__init__()
 
         self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=3, padding=1, bias=False)
-                                  #nn.ReLU(inplace=True),
-                                  #nn.Dropout(p=dropRate),
-                                  #nn.Conv2d(out_planes, out_planes, kernel_size=3, padding=1, bias=False)
-                                  
-
         self.equalInOut = (in_planes == out_planes)
 
         self.convShortcut = (not self.equalInOut) and nn.Conv2d(in_planes,
@@ -65,7 +60,7 @@ class Colorbranchgeb(nn.Module):
         super(Colorbranchgeb,self).__init__()
         
         self.downd = nn.Sequential(
-            GEBlock(num, num),
+            ACMBlock(num, num),
             nn.ReLU(),
             nn.Conv2d(num, 3, 3, 1, 1),
             nn.Sigmoid()
@@ -73,7 +68,7 @@ class Colorbranchgeb(nn.Module):
         self.upd = nn.Sequential(
             nn.Conv2d(3, num, 3, 1, 1),
             nn.ReLU(),
-            GEBlock(num, num),
+            ACMBlock(num, num),
             nn.ReLU()
             )
     def forward(self, x):
@@ -85,7 +80,7 @@ class Detailbranchgeb(nn.Module):
         super(Detailbranchgeb,self).__init__()
         
         self.downd = nn.Sequential(
-            GEBlock(num, int(num*rate)),
+            ACMBlock(num, int(num*rate)),
             nn.ReLU(),
             nn.Conv2d(int(num*rate), 1, 3, 1, 1),
             nn.Sigmoid()
@@ -93,7 +88,7 @@ class Detailbranchgeb(nn.Module):
         self.upd = nn.Sequential(
             nn.Conv2d(1, int(num*rate), 3, 1, 1),
             nn.ReLU(),
-            GEBlock(int(num*rate), num),
+            ACMBlock(int(num*rate), num),
             nn.ReLU()
             )
     def forward(self, x):
@@ -130,9 +125,9 @@ class Head(nn.Module):
     def forward(self, x):
         return self.r(x), self.l(x)
         
-class DCGERetinex(nn.Module):  
+class CusLIE(nn.Module):  
     def __init__(self, num=64):
-        super(DCGERetinex,self).__init__()
+        super(CusLIE,self).__init__()
         self.fl = Basicblock(num)
         self.da = DAM(num)
         self.head = Head(num)
